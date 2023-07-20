@@ -30,7 +30,7 @@ Options:
                        [default: 'build/Examples/FailoverTest']
   --reconf=<opts>      Additional options to pass through to the Reconfigure
                        binary. [default: '']
-  --servers=<num>      Number of servers [default: 5]
+  --servers=<num>      Number of servers [default: 3]
   --timeout=<seconds>  Number of seconds to wait for client to complete before
                        exiting with an ok [default: 20]
   --killinterval=<seconds>  Number of seconds to wait between killing servers
@@ -60,7 +60,7 @@ def main():
     launchdelay = int(arguments['--launchdelay'])
 
     server_ids = range(1, num_servers + 1)
-    cluster = "--cluster=%s" % ','.join([h[0] for h in
+    cluster = "--cluster=%s" % ','.join([h[1] for h in
                                         smokehosts[:num_servers]])
     with Sandbox() as sandbox:
         sh('rm -rf smoketeststorage/')
@@ -68,6 +68,7 @@ def main():
         sh('mkdir -p debug')
 
         for server_id in server_ids:
+            print(server_id)
             host = smokehosts[server_id - 1]
             with open('smoketest-%d.conf' % server_id, 'w') as f:
                 try:
@@ -76,15 +77,15 @@ def main():
                 except:
                     pass
                 f.write('serverId = %d\n' % server_id)
-                f.write('listenAddresses = %s\n' % host[0])
+                f.write('listenAddresses = %s\n' % host[1])
 
 
         print('Initializing first server\'s log')
-        sandbox.rsh(smokehosts[0][0],
-                    '%s --bootstrap --config smoketest-%d.conf' %
-                    (server_command, server_ids[0]),
-                   stderr=open('debug/bootstrap', 'w'))
-        print()
+        # sandbox.rsh(smokehosts[0][0],
+        #             '%s --bootstrap --config smoketest-%d.conf' %
+        #             (server_command, server_ids[0]),
+        #            stderr=open('debug/bootstrap', 'w'))
+        print("here")
 
         processes = {}
 
@@ -92,7 +93,7 @@ def main():
             host = smokehosts[server_id - 1]
             command = ('%s --config smoketest-%d.conf -l %s' %
                        (server_command, server_id, 'debug/%d' % server_id))
-            print('Starting %s on %s' % (command, host[0]))
+            print('Starting %s on %s' % (command, host[1]))
             processes[server_id] = sandbox.rsh(
                 host[0], command, bg=True)
             sandbox.checkFailures()
@@ -104,7 +105,9 @@ def main():
         sh('build/Examples/Reconfigure %s %s set %s' %
            (cluster,
             reconf_opts,
-            ' '.join([h[0] for h in smokehosts[:num_servers]])))
+            ' '.join([h[1] for h in smokehosts[:num_servers]])))
+        
+        print("here")
 
         for i, client_command in enumerate(client_commands):
             print('Starting %s %s on localhost' % (client_command, cluster))
@@ -122,9 +125,13 @@ def main():
             now = time.time()
             if now - start > timeout:
                 print('Timeout met with no errors')
+                
+                for server_id in server_ids:
+                    sandbox.kill(processes[server_id])
+
                 break
             if now - lastkill > killinterval:
-                server_id = random.choice(processes.keys())
+                server_id = random.choice(list(processes.keys()))
                 print('Killing server %d' % server_id)
                 sandbox.kill(processes[server_id])
                 del processes[server_id]

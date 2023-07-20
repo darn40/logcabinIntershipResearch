@@ -10,3 +10,9 @@
 /smoketest*.conf
 /smoketeststorage
 /storage
+
+.fake
+.vscode
+*.conf
+gtest
+*.txt

@@ -68,11 +68,11 @@ os.environ['LD_LIBRARY_PATH'] = ':'.join(ld_library_path)
 # consists of a name for the host (for ssh), an IP address
 # to use for creating service locators. and an id for generating
 # Ethernet addresses.
-hosts = []
-for i in range(1, 61):
-    hosts.append(('rc%02d' % i,
-                  '192.168.1.%d' % (100 + i),
-                  i))
+hosts = [('mouahe@192.168.122.1','192.168.122.1'),('server1@192.168.122.180','192.168.122.180'),('server2@192.168.122.17','192.168.122.17')]
+"""for i in range(1, 61):
+    hosts.append(('192.168.0.%d0' % i,
+                  '192.168.0.%d0' % (100 + i),
+                  i))"""
 
 # The set of hosts available for basic correctness testing.
 smokehosts = hosts

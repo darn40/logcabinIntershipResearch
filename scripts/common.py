@@ -34,6 +34,7 @@ def sh(command, bg=False, **kwargs):
     if bg:
         return subprocess.Popen(command, **kwargs)
     else:
+
         subprocess.check_call(command, **kwargs)
 
 def captureSh(command, **kwargs):
@@ -45,10 +46,16 @@ def captureSh(command, **kwargs):
     output = p.communicate()[0]
     if p.returncode:
         raise subprocess.CalledProcessError(p.returncode, command)
-    if output.count('\n') and output[-1] == '\n':
-        return output[:-1]
-    else:
+    if isinstance(output, bytes):
+        if str(output).count("\\n") and str(output)[-3:-1] == '\\n':
+            return str(output)[2:-3]
+        return str(output)[2:-1]
+    if isinstance(output, str):
+        if output.count('\\n') and (output[-1] == '\\n' or str(output)[-3:-1] == '\\n'):
+            return output[:-1]
         return output
+    raise SystemError("unexepected error, output is not bytes or string")
+    
 
 class Sandbox(object):
     """A context manager for launching and cleaning up remote processes."""
@@ -81,9 +88,11 @@ class Sandbox(object):
                           '%s/regexec' % scripts_path, sonce,
                           os.getcwd(), "'%s'" % command]
             p = subprocess.Popen(sh_command, **kwargs)
+            print("here2")
             process = self.Process(host, command, kwargs, sonce,
                                    p, ignoreFailures)
             self.processes.append(process)
+            print("here3")
             return process
         else:
             self.rsh(host, command, ignoreFailures, bg=True,
